@@ -95,3 +95,5 @@ export default function useStore<StoreValueType extends StoreObject>({
 
   return [store.current, dispatch, getLoading] as [StoreValueType, Dispatch, (type: Type) => boolean];
 }
+
+export * from './typings'

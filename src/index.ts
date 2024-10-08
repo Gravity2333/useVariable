@@ -49,3 +49,7 @@ export default function useVariable<VariableTypes extends StoreObject>(
 
   return [variables, dispatch, loading] as [VariableTypes, Dispatch, (type: Type) => boolean];
 }
+
+export * from './typings'
+export * from './hooks/useStore'
+export * from './hooks/useForceUpdate'
