@@ -6,6 +6,7 @@
 
 ##### 使用方式：
 ```typescript
+import useVariable from 'use-variable-hook'
 // 声明状态数据类型
 interface DataType {
   name: string

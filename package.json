@@ -1,5 +1,5 @@
 {
-  "name": "use-variable",
+  "name": "use-variable-hook",
   "version": "2.0.5",
   "description": "a react hook that provide a sample store and effect management",
   "main": "public/index.js",
