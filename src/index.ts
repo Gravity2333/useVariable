@@ -13,31 +13,41 @@ import {
 export default function useVariable<VariableTypes extends StoreObject>(
   useVariableParams: UseVariableParams,
 ) {
-  const [{ [VARIABLE_STORE_NAME]: useStoreValue }, useStoreDispatch, useStoreLoading] =
+  const [{ [VARIABLE_STORE_NAME]: useStoreValue }, useStoreDispatch, useStoreLoading,updater] =
     useStore<VariableTypes>({
       config: [_GenerateStoreConfig(useVariableParams)],
     });
 
   const dispatch = (action: { type: Type; payload?: any }) => {
-    useStoreDispatch({
-      type: _GenerateStoreReducerName(action.type),
-      payload: action.payload,
-    });
+    useStoreDispatch(
+      {
+        type: _GenerateStoreReducerName(action.type),
+        payload: action.payload,
+      },
+      variables,
+    );
   };
 
   const loading = (type: Type) => {
     return useStoreLoading(_GenerateStoreReducerName(type));
   };
 
-  const variables = useMemo(() => {
-    return new Proxy(useStoreValue, {
+  /** 监听函数 */
+  function observe(obj: Record<string, any>) {
+    for (const attributeName in obj) {
+      const attribute = obj[attributeName];
+      if (typeof attribute === 'object' && attribute !== null) {
+        obj[attributeName] = observe(attribute);
+      }
+    }
+    return new Proxy(obj, {
       get(target, key, receiver) {
         const res = Reflect.get(target, key, receiver);
         return res;
       },
       set(target, key, value, receiver) {
         const res = Reflect.set(target, key, value, receiver);
-        dispatch({ type: _GeneraterDefaultSetterName(key as string), payload: value });
+        updater()
         return res;
       },
       deleteProperty(target, key) {
@@ -45,6 +55,10 @@ export default function useVariable<VariableTypes extends StoreObject>(
         return res;
       },
     });
+  }
+
+  const variables = useMemo(() => {
+    return observe(useStoreValue);
   }, []);
 
   return [variables, dispatch, loading] as [VariableTypes, Dispatch, (type: Type) => boolean];

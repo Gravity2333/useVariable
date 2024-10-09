@@ -12,10 +12,10 @@ export type Action = {
 };
 
 /** reducer函数 */
-export type Reducer = (state: StoreObject, action: Action) => StoreObject;
+export type Reducer = (state: StoreObject, action: Action) => StoreObject|void;
 
 /** dispatch函数 */
-export type Dispatch = (action: { type: Type; payload?: any }) => void;
+export type Dispatch = (action: { type: Type; payload?: any }, receiver?: any) => void;
 
 /** 副作用 */
 export type Effect = (

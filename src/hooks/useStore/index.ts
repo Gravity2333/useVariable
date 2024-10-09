@@ -58,15 +58,20 @@ export default function useStore<StoreValueType extends StoreObject>({
     return maps;
   }, []);
 
-  const _handleReducer = (reducer: Reducer, name: Type, payload: any) => {
-    const storeSlice = store.current[name];
-    const newStoreSlice = reducer(storeSlice, { payload });
-    Object.assign(store.current, newStoreSlice);
+  const _handleReducer = (reducer: Reducer, name: Type, payload: any, receiver?: any) => {
+    if (receiver) {
+      const storeSlice = receiver;
+      reducer(storeSlice, { payload });
+    } else {
+      const storeSlice = store.current[name];
+      const newStoreSlice = reducer(storeSlice, { payload });
+      Object.assign(storeSlice, newStoreSlice);
+    }
     return updater();
   };
 
-  const _handleEffect = (effect: Effect, name: Type, type: Type, payload: any) => {
-    const storeSlice = store.current[name];
+  const _handleEffect = (effect: Effect, name: Type, type: Type, payload: any, receiver?: any) => {
+    const storeSlice = receiver || store.current[name];
     runTask((call) => {
       effect(
         {
@@ -82,18 +87,22 @@ export default function useStore<StoreValueType extends StoreObject>({
     });
   };
 
-  const dispatch: Dispatch = ({ type, payload }) => {
+  const dispatch: Dispatch = ({ type, payload }, receiver) => {
     const [name, actionType] = type.split(USE_STORE_TYPE_SPLITER);
     const configItem = configMap[name];
     const { reducers = {}, effects = {} } = configItem;
     if (effects[actionType]) {
-      _handleEffect(effects[actionType], name, type, payload);
+      _handleEffect(effects[actionType], name, type, payload, receiver);
     } else if (reducers[actionType]) {
-      _handleReducer(reducers[actionType], name, payload);
+      _handleReducer(reducers[actionType], name, payload, receiver);
     }
   };
 
-  return [store.current, dispatch, getLoading] as [StoreValueType, Dispatch, (type: Type) => boolean];
+  return [store.current, dispatch, getLoading, updater] as [
+    StoreValueType,
+    Dispatch,
+    (type: Type) => boolean,
+    () => void,
+  ];
 }
-
 export * from './typings'

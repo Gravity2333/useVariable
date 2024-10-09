@@ -38,10 +38,7 @@ export function _GenerateStoreConfig(variableParams: UseVariableParams) {
       enumerable: true,
       writable: true,
       value: (state: StoreObject, action: Action) => {
-        return {
-          ...state,
-          [variableName]: action.payload,
-        };
+        state[variableName] =  action.payload
       },
     });
   });
