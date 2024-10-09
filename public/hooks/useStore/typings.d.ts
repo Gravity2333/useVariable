@@ -14,7 +14,7 @@ export type Reducer = (state: StoreObject, action: Action) => StoreObject | void
 export type Dispatch = (action: {
     type: Type;
     payload?: any;
-}, receiver?: any) => void;
+}) => void;
 /** 副作用 */
 export type Effect = (_operators: {
     call: Call;

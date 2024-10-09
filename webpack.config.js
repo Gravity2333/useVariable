@@ -29,14 +29,14 @@ module.exports = {
   resolve: {
     extensions: [".tsx", ".ts", ".js"], // 自动解析的文件扩展名
   },
-  plugins: [
-    // new CopyWebpackPlugin({
-    //   patterns: [
-    //     // {
-    //     //   from: "./demo",
-    //     //   to: "./demo",
-    //     // },
-    //   ],
-    // }),
-  ],
+  // plugins: [
+  //   new CopyWebpackPlugin({
+  //     patterns: [
+  //       {
+  //         from: "./demo",
+  //         to: "./demo",
+  //       },
+  //     ],
+  //   }),
+  // ],
 };

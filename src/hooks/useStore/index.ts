@@ -10,22 +10,32 @@ import {
 } from './typings';
 import { runTask } from './libs/task';
 import useForceUpdate from '../useForceUpdate';
+import { observe } from './utils/watch';
 export default function useStore<StoreValueType extends StoreObject>({
   config = [],
 }: {
   config: StoreConfig[];
 }) {
+  // 更新hooks
+  const [updater] = useForceUpdate();
   const store = useRef<Record<string, any>>(
-    config.reduce((mergedValues, currentConfig) => {
-      return {
-        ...mergedValues,
-        [currentConfig.name]:
-          currentConfig.initialValue !== undefined ? currentConfig.initialValue : {},
-      };
-    }, {}),
+    observe(
+      config.reduce((mergedValues, currentConfig) => {
+        return {
+          ...mergedValues,
+          [currentConfig.name]:
+            currentConfig.initialValue !== undefined ? currentConfig.initialValue : {},
+        };
+      }, {}),
+      // onSet
+      updater,
+      // onGet
+      () => {},
+      // onDeleteProperty
+      updater,
+    ),
   );
 
-  const [updater] = useForceUpdate();
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
 
   function setLoading(type: Type, value: boolean = false) {
@@ -58,20 +68,13 @@ export default function useStore<StoreValueType extends StoreObject>({
     return maps;
   }, []);
 
-  const _handleReducer = (reducer: Reducer, name: Type, payload: any, receiver?: any) => {
-    if (receiver) {
-      const storeSlice = receiver;
-      reducer(storeSlice, { payload });
-    } else {
-      const storeSlice = store.current[name];
-      const newStoreSlice = reducer(storeSlice, { payload });
-      Object.assign(storeSlice, newStoreSlice);
-    }
-    return updater();
+  const _handleReducer = (reducer: Reducer, name: Type, payload: any) => {
+    const storeSlice = store.current[name];
+    reducer(storeSlice, { payload });
   };
 
-  const _handleEffect = (effect: Effect, name: Type, type: Type, payload: any, receiver?: any) => {
-    const storeSlice = receiver || store.current[name];
+  const _handleEffect = (effect: Effect, name: Type, type: Type, payload: any) => {
+    const storeSlice = store.current[name];
     runTask((call) => {
       effect(
         {
@@ -87,22 +90,21 @@ export default function useStore<StoreValueType extends StoreObject>({
     });
   };
 
-  const dispatch: Dispatch = ({ type, payload }, receiver) => {
+  const dispatch: Dispatch = ({ type, payload }) => {
     const [name, actionType] = type.split(USE_STORE_TYPE_SPLITER);
     const configItem = configMap[name];
     const { reducers = {}, effects = {} } = configItem;
     if (effects[actionType]) {
-      _handleEffect(effects[actionType], name, type, payload, receiver);
+      _handleEffect(effects[actionType], name, type, payload);
     } else if (reducers[actionType]) {
-      _handleReducer(reducers[actionType], name, payload, receiver);
+      _handleReducer(reducers[actionType], name, payload);
     }
   };
 
-  return [store.current, dispatch, getLoading, updater] as [
+  return [store.current, dispatch, getLoading] as [
     StoreValueType,
     Dispatch,
     (type: Type) => boolean,
-    () => void,
   ];
 }
-export * from './typings'
+export * from './typings';

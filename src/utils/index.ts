@@ -15,6 +15,7 @@ export function _GeneraterDefaultSetterName(variableName: string) {
   return `set${capitalizeFirstLetter(variableName)}`;
 }
 
+/** 生成useStore参数内容 */
 export function _GenerateStoreConfig(variableParams: UseVariableParams) {
   const storeConfig: StoreConfig = {
     name: VARIABLE_STORE_NAME,

@@ -15,7 +15,7 @@ export type Action = {
 export type Reducer = (state: StoreObject, action: Action) => StoreObject|void;
 
 /** dispatch函数 */
-export type Dispatch = (action: { type: Type; payload?: any }, receiver?: any) => void;
+export type Dispatch = (action: { type: Type; payload?: any }) => void;
 
 /** 副作用 */
 export type Effect = (
