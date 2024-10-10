@@ -69,36 +69,55 @@ export default function useStore<StoreValueType extends StoreObject>({
   }, []);
 
   const _handleReducer = (reducer: Reducer, name: Type, payload: any) => {
-    const storeSlice = store.current[name];
-    reducer(storeSlice, { payload });
+    return new Promise((resolve) => {
+      const storeSlice = store.current[name];
+      resolve(reducer(storeSlice, { payload }));
+    });
   };
 
-  const _handleEffect = (effect: Effect, name: Type, type: Type, payload: any) => {
-    const storeSlice = store.current[name];
-    runTask((call) => {
-      effect(
-        {
-          call,
-          setLoading: setLoading.bind(null, type),
-        },
-        {
-          store: storeSlice,
-          dispatch,
-        },
-        payload,
+  const _handleEffect = (
+    effect: Effect,
+    name: Type,
+    type: Type,
+    payload: any,
+    outerDispatch?: Dispatch,
+  ) => {
+    return new Promise((resolve) => {
+      const storeSlice = store.current[name];
+      resolve(
+        runTask((call, _taskResolve, _taskReject) => {
+          effect(
+            {
+              call,
+              setLoading: setLoading.bind(null, type),
+              Control: {
+                return: _taskResolve,
+                error: _taskReject,
+              },
+            },
+            {
+              store: storeSlice,
+              dispatch: outerDispatch || dispatch,
+            },
+            payload,
+          );
+        }),
       );
     });
   };
 
-  const dispatch: Dispatch = ({ type, payload }) => {
-    const [name, actionType] = type.split(USE_STORE_TYPE_SPLITER);
-    const configItem = configMap[name];
-    const { reducers = {}, effects = {} } = configItem;
-    if (effects[actionType]) {
-      _handleEffect(effects[actionType], name, type, payload);
-    } else if (reducers[actionType]) {
-      _handleReducer(reducers[actionType], name, payload);
-    }
+  const dispatch: Dispatch = ({ type, payload }, outerDispatch) => {
+    return new Promise((resolve, reject) => {
+      const [name, actionType] = type.split(USE_STORE_TYPE_SPLITER);
+      const configItem = configMap[name];
+      const { reducers = {}, effects = {} } = configItem || {};
+      if (effects[actionType]) {
+        resolve(_handleEffect(effects[actionType], name, type, payload, outerDispatch));
+      } else if (reducers[actionType]) {
+        resolve(_handleReducer(reducers[actionType], name, payload));
+      }
+      reject('未找到对应的effect/reducer');
+    });
   };
 
   return [store.current, dispatch, getLoading] as [

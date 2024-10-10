@@ -17,10 +17,10 @@ export default function useVariable<VariableTypes extends StoreObject>(
   });
 
   const dispatch = (action: { type: Type; payload?: any }) => {
-    _storeDispatch({
+    return _storeDispatch({
       type: _GenerateStoreReducerName(action.type),
       payload: action.payload,
-    });
+    },dispatch);
   };
 
   const loading = (type: Type) => {

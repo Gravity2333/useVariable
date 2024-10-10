@@ -12,19 +12,36 @@ export type Action = {
 };
 
 /** reducer函数 */
-export type Reducer = (state: StoreObject, action: Action) => StoreObject|void;
+export type Reducer = (state: StoreObject, action: Action) => StoreObject | void;
 
 /** dispatch函数 */
-export type Dispatch = (action: { type: Type; payload?: any }) => void;
+export type Dispatch = (
+  action: { type: Type; payload?: any },
+  outerDitch?: Dispatch,
+) => Promise<any>;
+
+export type TaskControl = {
+  return: (val: any) => void;
+  error: (reason: any) => void;
+};
 
 /** 副作用 */
 export type Effect = (
-  _operators: { call: Call; setLoading: (loading: boolean) => void },
+  _operators: {
+    call: Call;
+    setLoading: (loading: boolean) => void;
+    /** 任务流程控制器，负责结束任务或者抛出异常 */
+    Control: TaskControl;
+  },
   _store: {
     store: StoreObject;
     dispatch: Dispatch;
   },
   payload?: any,
+  promisevalue?: {
+    resolve: (val: any) => void;
+    reject: (reason: any) => void;
+  },
 ) => void;
 
 /** 仓库配置 */
