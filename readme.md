@@ -6,7 +6,6 @@
 
 ##### 使用方式：
 ```typescript
-import useVariable from 'use-variable-hook'
 // 声明状态数据类型
 interface DataType {
   name: string
@@ -62,6 +61,95 @@ export function UserInfoDisplayComponent({id}: {id: string}){
 }
 
 ```
+##### 通过调用构建函数来使用常量
+useVariable支持重载传入函数：
+```javascript
+function useVariable<VariableTypes extends StoreObject>(
+  creator: (...args: any[]) => UseVariableParams,
+  ...args: any[]
+): [VariableTypes, Dispatch, (type: Type) => boolean];
+```
+其中，creator是创建函数，useVariable内部会在初始化时调用一次creator函数，并且将args参数传入
+当需要使用常量时，可以通过args传入构建函数，这个常量会以闭包的方式保存在creator函数的作用域内。
+
+DEMO:
+```javascript
+const creatorFn = function (form: FormInstance<any>) {
+  return {
+    variables: {
+      /** formmodal 谈出框开关 */
+      formVisiable: false,
+    },
+    reducers: {
+      /** 打开谈出框 */
+      open(store) {
+        store.formVisiable = true;
+      },
+      /** copy */
+      copy(store, { payload: initialValue }) {
+        form.setFieldsValue({
+          name: initialValue.name + '_copy',
+          modeName: initialValue.modeName,
+          description: initialValue.description,
+          timeRange: [moment(initialValue.startTime), moment(initialValue.endTime)],
+        });
+        store.formVisiable = true;
+      },
+      /** 关闭谈出框 */
+      close(store) {
+        form.resetFields();
+        store.formVisiable = false;
+      },
+    },
+    effects: {
+      /** 提交表单 */
+      submit({ call, setLoading, Control }, { dispatch }, formValues) {
+        setLoading(true);
+        const { success } = call(createSystemReport, {
+          name: formValues.name,
+          modeName: formValues.modeName,
+          startTime: moment(formValues.timeRange[0])?.format('YYYY-MM-DD HH:mm:ss'),
+          endTime: moment(formValues.timeRange[1])?.format('YYYY-MM-DD HH:mm:ss'),
+          description: formValues.description,
+        });
+
+        if (success) {
+          message.success('任务创建成功！');
+          dispatch({ type: 'close' });
+          Control.return({});
+        } else {
+          message.error('任务创建失败！');
+          Control.error({});
+        }
+        setLoading(false);
+      },
+    },
+  } as UseVariableParams;
+};
+
+
+function Component(){
+  const [form] = Form.useForm();
+
+  const [{ formVisiable }, dispatch, loading] = useVariable<GenerateReportBtnType>(
+    creatorFn,
+    form,
+  );
+
+  useImperativeHandle(
+    ref,
+    () => {
+      return {
+        copy: (initialValue: any) => {
+          dispatch({ type: 'copy', payload: initialValue });
+        },
+      };
+    },
+    [],
+  );
+}
+```
+如上，我们可以将form对象传入creator函数中，在copy reducer调用中，可以访问该对象
 
 ##### 修改状态
 
